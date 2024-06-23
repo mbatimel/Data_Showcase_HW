@@ -8,6 +8,8 @@ require (
 	github.com/go-redis/cache v6.4.0+incompatible // indirect
 	github.com/go-redis/cache/v9 v9.0.0 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/gorilla/mux v1.8.1
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/redis/go-redis/v9 v9.0.0-rc.4 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.2 // indirect
