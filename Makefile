@@ -1,7 +1,7 @@
-.PHONY: server
-server:
-	go build -o server cmd/main.go  
-	./server
+.PHONY: service
+service:
+	go build -o service cmd/main.go  
+	./service
 .PHONY: up
 up:
 	docker-compose up -d

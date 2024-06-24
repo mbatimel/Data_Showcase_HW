@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-
-	"github.com/mbatimel/Data_Showcase_HW/internal/server"
+	"github.com/mbatimel/Data_Showcase_HW/internal/service"
 )
 
 
 
 func main() {
-	serv,err := server.NewRedisConnection(3)
+	serv,err := service.NewRedisConnection(3)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -18,10 +17,6 @@ func main() {
 
 	fmt.Println(serv.Cap())
 
-	err = serv.Clear()
-	if err != nil {
-		log.Fatalln(err)
-	}
 	serv.Add("key1", "value1")
     value, ok := serv.Get("key1")
     if ok {
@@ -29,4 +24,8 @@ func main() {
     } else {
         fmt.Println("Ключ не найден")
     }
+	err = serv.Clear()
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
