@@ -1,23 +1,17 @@
-package service
+package cache
 
 import (
 	"fmt"
 	"log"
+	"net"
 	"sync"
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/mbatimel/Data_Showcase_HW/internal/config"
 )
-type ICache interface {
-	Cap() int
-	Clear()
-	Add(key, value interface{})
-	AddWithTTL(key, value interface{}, ttl time.Duration)
-	Get(key interface{}) (value interface{}, ok bool)
-	Remove(key interface{})
-}
 
-type CacheService struct{
+type redisCache struct{
 	redisClient	*redis.Client
 	cap 		int
 	mu 			sync.Mutex
@@ -25,9 +19,9 @@ type CacheService struct{
 }
 
 
-func NewRedisConnection( cap int) (*CacheService, error){
+func NewRedisCache(cfg config.Cache) (ICache, error){
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
 		DB:       0,
 	})
 
@@ -36,18 +30,19 @@ func NewRedisConnection( cap int) (*CacheService, error){
 		return nil, err
 	}
 
-	return &CacheService{
+	return &redisCache{
 		redisClient:	client,
-		cap:			cap,
+		cap:			cfg.Cap,
 		mu:				sync.Mutex{},
 		keys:			make(map[interface{}]time.Time),
 	}, nil
 }
 
-func (cs *CacheService) Cap() int {
+func (cs *redisCache) Cap() int {
 	return cs.cap
 }
-func (cs *CacheService) Clear() error{
+
+func (cs *redisCache) Clear() error{
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 	err :=cs.redisClient.FlushDB().Err()
@@ -57,7 +52,8 @@ func (cs *CacheService) Clear() error{
 	clear(cs.keys)
 	return nil
 }
-func (cs *CacheService) Get(key interface{}) (value interface{}, ok bool) {
+
+func (cs *redisCache) Get(key interface{}) (value interface{}, ok bool) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
     val:= cs.redisClient.Get(fmt.Sprintf("%v", key)).Val()
@@ -68,7 +64,7 @@ func (cs *CacheService) Get(key interface{}) (value interface{}, ok bool) {
     return val, true
 }
 
-func (cs *CacheService) Remove(key interface{}) {
+func (cs *redisCache) Remove(key interface{}) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
     err := cs.redisClient.Del(fmt.Sprintf("%v", key)).Err()
@@ -78,22 +74,23 @@ func (cs *CacheService) Remove(key interface{}) {
 	delete(cs.keys, key)
 }
 
-func (cs *CacheService) Add(key, value interface{}) {
+func (cs *redisCache) Add(key, value interface{}) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
     cs.addItem(key,value,0)
 }
-func (cs *CacheService) AddWithTTL(key, value interface{}, ttl time.Duration) {
+
+func (cs *redisCache) AddWithTTL(key, value interface{}, ttl time.Duration) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
     cs.addItem(key,value,ttl)
 }
 
-func (cs *CacheService) keyUsedUpdate(key interface{}){
+func (cs *redisCache) keyUsedUpdate(key interface{}){
 	cs.keys[key] = time.Now()
 }
 
-func (cs *CacheService) addItem(key, value interface{}, ttl time.Duration) {
+func (cs *redisCache) addItem(key, value interface{}, ttl time.Duration) {
 	if len(cs.keys) >= cs.cap {
 		cs.evictLRU()
 	}
@@ -101,15 +98,17 @@ func (cs *CacheService) addItem(key, value interface{}, ttl time.Duration) {
 	cs.keyUsedUpdate(key)
 }
 
-func (cs *CacheService) evictLRU() {
+func (cs *redisCache) evictLRU() {
 	var oldestKey interface{}
-	var oldestTime time.Time
+	oldestTime := time.Now()
 
 	for k, v := range cs.keys {
-		if oldestKey == nil || v.Before(oldestTime) {
+		if v.Before(oldestTime) {
 			oldestKey = k
 			oldestTime = v
 		}
 	}
-	cs.Remove(oldestKey)
+	if oldestKey != nil {
+		cs.Remove(oldestKey)
+	}
 }
