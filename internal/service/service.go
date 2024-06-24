@@ -97,7 +97,7 @@ func (cs *CacheService) addItem(key, value interface{}, ttl time.Duration) {
 	if len(cs.keys) >= cs.cap {
 		cs.evictLRU()
 	}
-	cs.redisClient.Set(fmt.Sprintf("%v", key), value, ttl)
+	cs.redisClient.Set(fmt.Sprintf("%v", key), value, ttl * time.Second)
 	cs.keyUsedUpdate(key)
 }
 
