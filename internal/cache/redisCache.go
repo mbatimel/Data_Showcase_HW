@@ -99,7 +99,7 @@ func (cs *redisCache) addItem(key, value interface{}, ttl time.Duration) {
 }
 
 func (cs *redisCache) evictLRU() {
-	// Найти ключ с наименьшим временем последнего доступа
+
 	var lruKey interface{}
 	var lruTime time.Time
 	first := true
@@ -112,7 +112,6 @@ func (cs *redisCache) evictLRU() {
 		}
 	}
 
-	// Удалить найденный LRU ключ из Redis и из отслеживаемых ключей
 	if lruKey != nil {
 		err := cs.redisClient.Del(fmt.Sprintf("%v", lruKey)).Err()
 		if err != nil {

@@ -52,14 +52,20 @@ func NewServerConfig(cfg config.Config) (Server, error){
 	srv:= http.Server{
 		Addr: net.JoinHostPort(cfg.Server.Host, cfg.Server.Port),
 	}
-	cache, err := cache.NewRedisCache(cfg.Cache)
-	if err != nil {
-		
-		return nil,fmt.Errorf("failed to create cache: %w", err)
+	var cacheMemory cache.ICache
+	var err error
+	if !cfg.Cache.InMemory{ 
+		cacheMemory, err = cache.NewRedisCache(cfg.Cache)
+		if err != nil {
+			
+			return nil,fmt.Errorf("failed to create cache: %w", err)
+		}
+	}else{
+		cacheMemory = cache.NewInMemoryCache(cfg.Cache.Cap)
 	}
 	sv := server{
 		srv :&srv,
-		cache: cache,
+		cache: cacheMemory,
 	}
 	sv.setupRoutes()
 	return &sv, nil
