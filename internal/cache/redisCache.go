@@ -94,21 +94,30 @@ func (cs *redisCache) addItem(key, value interface{}, ttl time.Duration) {
 	if len(cs.keys) >= cs.cap {
 		cs.evictLRU()
 	}
-	cs.redisClient.Set(fmt.Sprintf("%v", key), value, ttl * time.Second)
+	cs.redisClient.Set(fmt.Sprintf("%v", key), value, ttl)
 	cs.keyUsedUpdate(key)
 }
 
 func (cs *redisCache) evictLRU() {
-	var oldestKey interface{}
-	oldestTime := time.Now()
+	// Найти ключ с наименьшим временем последнего доступа
+	var lruKey interface{}
+	var lruTime time.Time
+	first := true
 
-	for k, v := range cs.keys {
-		if v.Before(oldestTime) {
-			oldestKey = k
-			oldestTime = v
+	for key, accessTime := range cs.keys {
+		if first || accessTime.Before(lruTime) {
+			lruKey = key
+			lruTime = accessTime
+			first = false
 		}
 	}
-	if oldestKey != nil {
-		cs.Remove(oldestKey)
+
+	// Удалить найденный LRU ключ из Redis и из отслеживаемых ключей
+	if lruKey != nil {
+		err := cs.redisClient.Del(fmt.Sprintf("%v", lruKey)).Err()
+		if err != nil {
+			log.Printf("Failed to delete LRU key %v: %v", lruKey, err)
+		}
+		delete(cs.keys, lruKey)
 	}
 }

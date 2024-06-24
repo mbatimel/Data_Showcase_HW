@@ -3,7 +3,7 @@ server:
   port: "8080"
 
 cache:
-  capacity: 5
+  capacity: 2
   inMemory: false
   redis:
     host: "localhost"

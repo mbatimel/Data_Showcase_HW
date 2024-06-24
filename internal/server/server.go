@@ -71,7 +71,7 @@ func (s *server)setupRoutes(){
 	mx.HandleFunc("/cap",s.handleCap)
 	mx.HandleFunc("/add",s.handleAdd)
 	mx.HandleFunc("/clear",s.handleClear)
-	mx.HandleFunc("/addtll",s.handleAddWithTTL)
+	mx.HandleFunc("/addttl",s.handleAddWithTTL)
 	mx.HandleFunc("/get",s.handleGet)
 	mx.HandleFunc("/remove",s.handleRemove)
 
